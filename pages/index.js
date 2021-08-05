@@ -1,5 +1,5 @@
 const Home = () => {
-  return "Variant A";
+  return "Original";
 };
 
 export default Home;
