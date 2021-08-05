@@ -1,0 +1,38 @@
+name: Deploy branch to Layer0
+
+on:
+  push:
+    paths-ignore:
+      - "README.md"
+  release:
+    types: [published]
+
+jobs:
+  deploy-to-layer0:
+    if: contains(github.ref, 'refs/tags') == false || github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Layer0 deploy token secret
+        if: env.layer0_deploy_token == ''
+        run: |
+          echo You must define the "layer0_deploy_token" secret in GitHub project settings
+          exit 1
+        env:
+          layer0_deploy_token: ${{secrets.layer0_deploy_token}}
+      - name: Extract branch name
+        shell: bash
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//_/g')" >> $GITHUB_ENV
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      - name: Install Dependencies
+        run: npm install
+      - name: Install Layer0
+        run: npm install -g @layer0/cli
+      - name: Wrap Layer0
+        run: layer0 init
+      - name: Deploy to Layer0
+        run: npm run layer0:deploy -- ${{'--branch=$BRANCH_NAME' || ''}} --token=$layer0_deploy_token ${{github.event_name == 'push' && env.BRANCH_NAME == 'master' && '--environment=default' || ''}} ${{github.event_name == 'push' && env.BRANCH_NAME != 'master' && '--environment=preview' || ''}}
+        env:
+          layer0_deploy_token: ${{secrets.layer0_deploy_token}}
