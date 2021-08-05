@@ -1,3 +1,5 @@
 const Home = () => {
-  return 'Variant A'
-}
+  return "Variant A";
+};
+
+export default Home;
